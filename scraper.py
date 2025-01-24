@@ -38,7 +38,9 @@ def read_entire_file(fname):
 def save_html(fname, html_doc):
     with open(fname, 'w', encoding="utf-8") as f:
         f.write(html_doc)
-        
+
+Path('html/error').mkdir(parents=True, exist_ok=True)
+
 cnt = 0
 while q and cnt < 10000:
     cnt += 1
@@ -53,9 +55,14 @@ while q and cnt < 10000:
         error_fname = error_file_name(url)
         if is_file_exist(error_fname):
             continue
-        
-        response = request('GET', url)
-        sleep(0.5)
+
+        try:
+            response = request('GET', url)
+        except:
+            save_html(error_fname, "error")
+        finally:
+            sleep(0.5)
+            
         if response.status_code != 200:
             save_html(error_fname, "error")
             continue
@@ -65,8 +72,6 @@ while q and cnt < 10000:
     soup = BeautifulSoup (html_doc, 'html.parser')
 
     for link in soup.find_all('a', href=True):
-        #if not link.has_attr('href'):
-        #    continue
         new_url = link.get('href')
 
         flag = False
@@ -91,7 +96,4 @@ while q and cnt < 10000:
             used.add(new_url)
             q.append(new_url)
 
-    #print(soup.prettify())
-    #sleep(1)
     print('end while')
-    #input()
