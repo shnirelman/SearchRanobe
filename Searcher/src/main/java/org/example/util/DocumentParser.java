@@ -24,7 +24,7 @@ public class DocumentParser {
             //System.out.println(text);
             Map<String, Object> result =
                     new ObjectMapper().readValue(text, HashMap.class);
-            System.out.println(result.size());
+//            System.out.println(result.size());
 
             Document document = new Document();
             FieldType textIndexedType = new FieldType();

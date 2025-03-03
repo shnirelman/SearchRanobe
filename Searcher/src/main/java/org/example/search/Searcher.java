@@ -1,6 +1,10 @@
 package org.example.search;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.ru.RussianAnalyzer;
+import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
+import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -17,16 +21,17 @@ import java.util.*;
 public class Searcher {
     public static String ANY_FIELD = "any";
     private Directory memoryIndex;
-    private RussianAnalyzer analyzer;
+    private MyAnalyzer analyzer;
+//    private Analyzer analyzer;
     private IndexWriterConfig indexWriterConfig;
     private IndexWriter writer;
     private final String[] text_fields;
     private final int maxDistance;
 
     Searcher(String pathToSave) {
-        analyzer = new RussianAnalyzer();
+        analyzer = new MyAnalyzer();
         indexWriterConfig = new IndexWriterConfig(analyzer);
-        maxDistance = 2;
+        maxDistance = 1;
 
         //memoryIndex = new RAMDirectory();
         try {
@@ -82,14 +87,32 @@ public class Searcher {
     void addFuzzyQuery(BooleanQuery.Builder booleanQueryBuilder, Query query) {
         if(query instanceof BooleanQuery) {
             for(var clause : ((BooleanQuery) query).clauses()) {
-                Term term = ((TermQuery)clause.getQuery()).getTerm();
+                Query clauseQuery = clause.getQuery();
+                if(clauseQuery instanceof SynonymQuery synonymQuery) {
+                    List<Term> terms = synonymQuery.getTerms();
+                    for(Term term : terms) {
+                        FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
+                        booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
+                    }
+                } else {
+                    Term term = ((TermQuery)clause.getQuery()).getTerm();
+                    FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
+                    booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
+                }
+            }
+        } else {
+//            System.out.println(query.getClass());
+            if(query instanceof SynonymQuery synonymQuery) {
+                List<Term> terms = synonymQuery.getTerms();
+                for(Term term : terms) {
+                    FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
+                    booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
+                }
+            } else {
+                Term term = ((TermQuery)query).getTerm();
                 FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
                 booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
             }
-        } else {
-            Term term = ((TermQuery)query).getTerm();
-            FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
-            booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
         }
     }
 
@@ -117,11 +140,11 @@ public class Searcher {
         this.memoryIndex = memoryIndex;
     }
 
-    public RussianAnalyzer getAnalyzer() {
+    public MyAnalyzer getAnalyzer() {
         return analyzer;
     }
 
-    public void setAnalyzer(RussianAnalyzer analyzer) {
+    public void setAnalyzer(MyAnalyzer analyzer) {
         this.analyzer = analyzer;
     }
 

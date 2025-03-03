@@ -9,13 +9,15 @@ import java.io.IOException;
 
 public class SearchIndexInitializer {
     DocumentParser documentParser;
+    private int fileCounter = 0;
 
     public SearchIndexInitializer() {}
 
     public Searcher initSearchIndex() {
         documentParser = new DocumentParser();
 
-        String pathToSave = "D:\\Python\\SearchRanobe\\index\\index.lucene";
+//        String pathToSave = "D:\\Python\\SearchRanobe\\index\\index.lucene";
+        String pathToSave = "..\\index\\index.lucene";
         File f = new File(pathToSave);
         boolean exists = f.exists();
 
@@ -23,8 +25,9 @@ public class SearchIndexInitializer {
 
         if(!exists) {
             searcher.createWriter();
-            String descriptionsDirectoryPath = "D:\\Python\\SearchRanobe\\json\\description";
-            String chaptersDirectoryPath = "D:\\Python\\SearchRanobe\\json\\chapter";
+            System.out.println("Index Created");
+            String descriptionsDirectoryPath = "..\\json\\description";
+            String chaptersDirectoryPath = "..\\json\\chapter";
             saveDocuments(descriptionsDirectoryPath, searcher.getWriter());
             saveDocuments(chaptersDirectoryPath, searcher.getWriter());
             searcher.closeWriter();
@@ -39,7 +42,10 @@ public class SearchIndexInitializer {
         for (File file : dir.listFiles()) {
             if (!file.isDirectory()) {
                 Document doc = documentParser.createDocument(file);
-                System.out.println(file.getName());
+                if(++fileCounter % 200 == 0) {
+                    System.out.println(fileCounter + " documents created");
+                }
+
                 try {
                     writer.addDocument(doc);
                 } catch (IOException ignored) {
