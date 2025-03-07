@@ -85,20 +85,22 @@ public class Searcher {
     }
 
     void addFuzzyQuery(BooleanQuery.Builder booleanQueryBuilder, Query query) {
+        System.out.println(query.toString());
         if(query instanceof BooleanQuery) {
             for(var clause : ((BooleanQuery) query).clauses()) {
                 Query clauseQuery = clause.getQuery();
-                if(clauseQuery instanceof SynonymQuery synonymQuery) {
-                    List<Term> terms = synonymQuery.getTerms();
-                    for(Term term : terms) {
-                        FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
-                        booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
-                    }
-                } else {
-                    Term term = ((TermQuery)clause.getQuery()).getTerm();
-                    FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
-                    booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
-                }
+                addFuzzyQuery(booleanQueryBuilder, clauseQuery);
+//                if(clauseQuery instanceof SynonymQuery synonymQuery) {
+//                    List<Term> terms = synonymQuery.getTerms();
+//                    for(Term term : terms) {
+//                        FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
+//                        booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
+//                    }
+//                } else {
+//                    Term term = ((TermQuery)clause.getQuery()).getTerm();
+//                    FuzzyQuery fuzzyQuery = new FuzzyQuery(term, maxDistance);
+//                    booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
+//                }
             }
         } else {
 //            System.out.println(query.getClass());
