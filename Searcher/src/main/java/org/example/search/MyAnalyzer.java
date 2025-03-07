@@ -7,6 +7,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.ru.*;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -54,7 +55,9 @@ public class MyAnalyzer extends Analyzer {
     protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer source = new WhitespaceTokenizer();
         TokenStream result = new LowerCaseFilter(source);
+
         result = new RussianLightStemFilter(result);
+        result = new ShingleFilter(result, 2, 2);
         result = new SynonymGraphFilter(result, synonymMap, true);
         return new TokenStreamComponents(source, result);
     }
