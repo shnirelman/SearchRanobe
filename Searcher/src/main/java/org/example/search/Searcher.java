@@ -85,7 +85,7 @@ public class Searcher {
     }
 
     void addFuzzyQuery(BooleanQuery.Builder booleanQueryBuilder, Query query) {
-        System.out.println(query.toString());
+        //System.out.println(query.toString());
         if(query instanceof BooleanQuery) {
             for(var clause : ((BooleanQuery) query).clauses()) {
                 Query clauseQuery = clause.getQuery();
