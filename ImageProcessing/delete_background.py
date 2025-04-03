@@ -46,10 +46,12 @@ def remove_background_rembg(path, new_path):
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(1.5)  # Увеличение контраста на 50%
     result = rembg.remove(image, session=session,
+
                         alpha_matting=True,
                         alpha_matting_foreground_threshold=270,
                         alpha_matting_background_threshold=20,
                         alpha_matting_erode_size=11)
+
     result.save(new_path)
     
 
