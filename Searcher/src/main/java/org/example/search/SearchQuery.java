@@ -16,4 +16,14 @@ public class SearchQuery {
     public Map<String, String> getFields() {
         return fields;
     }
+
+    public String toString() {
+        if (fields.isEmpty()) {
+            return "";
+        } else if (fields.size() == 1 && fields.containsKey(Searcher.ANY_FIELD)) {
+            return fields.get(Searcher.ANY_FIELD);
+        } else {
+            return fields.toString();
+        }
+    }
 }
