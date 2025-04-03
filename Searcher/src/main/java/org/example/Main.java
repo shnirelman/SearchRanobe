@@ -8,6 +8,7 @@ import org.example.dialogues.SearchRanobeDialogue;
 import org.example.search.SearchIndexInitializer;
 import org.example.search.SearchQuery;
 import org.example.search.Searcher;
+import org.example.util.DataSaver;
 import org.example.util.DocumentPrinter;
 
 import java.io.*;
@@ -22,7 +23,10 @@ public class Main {
         System.out.print("Номер команды: ");
     }
 
-    private static void runDialogue(Searcher searcher, Scanner scanner, SearchDialogue dialogue) {
+    private static void runDialogue(Searcher searcher,
+                                    Scanner scanner,
+                                    SearchDialogue dialogue,
+                                    DataSaver dataSaver) {
         scanner.nextLine();
         SearchQuery sq = dialogue.startDialogue();
         try {
@@ -30,6 +34,7 @@ public class Main {
             if(docs.isEmpty()) {
                 System.out.println("Ничего не найдено");
             } else {
+                dataSaver.saveData(sq, docs);
                 for (Document doc : docs) {
                     DocumentPrinter.printDocument(doc);
                     //System.out.println("id: " + doc.get("ranobe_id") + "  " + doc.get("name"));
@@ -49,6 +54,8 @@ public class Main {
         SearchDialogue searchRanobeDialogue = new SearchRanobeDialogue(scanner);
         SearchDialogue searchAnythingDialogue = new SearchAnythingDialogue(scanner);
 
+        DataSaver dataSaver = new DataSaver();
+
         while (true) {
             showHelp();
 
@@ -63,9 +70,9 @@ public class Main {
             }
 
             if(choice == 1) {
-                runDialogue(searcher, scanner, searchRanobeDialogue);
+                runDialogue(searcher, scanner, searchRanobeDialogue, dataSaver);
             } else if(choice == 2) {
-                runDialogue(searcher, scanner, searchAnythingDialogue);
+                runDialogue(searcher, scanner, searchAnythingDialogue, dataSaver);
             } else if(choice == 3) {
                 break;
             }
