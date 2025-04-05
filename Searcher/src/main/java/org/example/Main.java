@@ -5,6 +5,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.example.dialogues.SearchAnythingDialogue;
 import org.example.dialogues.SearchDialogue;
 import org.example.dialogues.SearchRanobeDialogue;
+import org.example.dssm.DSSMClient;
 import org.example.search.SearchIndexInitializer;
 import org.example.search.SearchQuery;
 import org.example.search.Searcher;
@@ -26,9 +27,20 @@ public class Main {
     private static void runDialogue(Searcher searcher,
                                     Scanner scanner,
                                     SearchDialogue dialogue,
-                                    DataSaver dataSaver) {
+                                    DataSaver dataSaver,
+                                    DSSMClient dssmClient) {
         scanner.nextLine();
         SearchQuery sq = dialogue.startDialogue();
+//        float[] dssmScores;
+//        try {
+//            dssmScores = dssmClient.getDSSMScores(sq);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//        for (float dssmScore : dssmScores) {
+//            System.out.println(dssmScore);
+//        }
         try {
             List<Document> docs = searcher.search(sq);
             if(docs.isEmpty()) {
@@ -55,6 +67,7 @@ public class Main {
         SearchDialogue searchAnythingDialogue = new SearchAnythingDialogue(scanner);
 
         DataSaver dataSaver = new DataSaver();
+        DSSMClient dssmClient = new DSSMClient();
 
         while (true) {
             showHelp();
@@ -70,9 +83,9 @@ public class Main {
             }
 
             if(choice == 1) {
-                runDialogue(searcher, scanner, searchRanobeDialogue, dataSaver);
+                runDialogue(searcher, scanner, searchRanobeDialogue, dataSaver, dssmClient);
             } else if(choice == 2) {
-                runDialogue(searcher, scanner, searchAnythingDialogue, dataSaver);
+                runDialogue(searcher, scanner, searchAnythingDialogue, dataSaver, dssmClient);
             } else if(choice == 3) {
                 break;
             }

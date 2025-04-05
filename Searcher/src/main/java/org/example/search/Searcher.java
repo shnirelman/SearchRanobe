@@ -13,6 +13,7 @@ import org.apache.lucene.queryparser.xml.builders.FuzzyLikeThisQueryBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.example.dssm.DSSMClient;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -27,6 +28,7 @@ public class Searcher {
     private IndexWriter writer;
     private final String[] text_fields;
     private final int maxDistance;
+    private DSSMClient dssmClient;
 
     Searcher(String pathToSave) {
         analyzer = new MyAnalyzer();
@@ -42,24 +44,100 @@ public class Searcher {
         writer = null;
 
         text_fields = new String[]{"description", "tags", "name", "text"};
+
+        dssmClient = new DSSMClient();
     }
 
-    private List<Document> search(Query query) throws ParseException, IOException {
+    private float combineScores(float luceneScore, float dssmScore) {
+        return (float) (luceneScore * 0.02 +  dssmScore * 0.98);
+    }
+
+    private class PairFloatDoc {
+        float first;
+        Document second;
+
+        public PairFloatDoc(float first, Document second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public float getFirst() {
+            return first;
+        }
+
+        public void setFirst(float first) {
+            this.first = first;
+        }
+
+        public Document getSecond() {
+            return second;
+        }
+
+        public void setSecond(Document second) {
+            this.second = second;
+        }
+    }
+
+    private class PairFloatDocumentComparator implements Comparator<PairFloatDoc> {
+
+        @Override
+        public int compare(PairFloatDoc a, PairFloatDoc b) {
+            return b.getFirst() - a.getFirst() > 0 ? 1 : -1;
+        }
+    }
+
+
+    private int checkDescription(Document document) {
+        int ranobe_id = -1;
+        boolean res = false;
+        for (IndexableField field : document.getFields()) {
+            String fieldName = field.name();
+            if(fieldName.equals("description")) {
+                res = true;
+            } else if(fieldName.equals("ranobe_id")) {
+                String fieldValue = field.stringValue();
+                ranobe_id = Integer.parseInt(fieldValue);
+            }
+        }
+        if(res)
+            return ranobe_id;
+        else return -1;
+    }
+
+    private List<Document> search(Query query, SearchQuery searchQuery) throws ParseException, IOException {
         IndexReader indexReader = DirectoryReader.open(memoryIndex);
         IndexSearcher searcher = new IndexSearcher(indexReader);
-        TopDocs topDocs = searcher.search(query, 10);
+        TopDocs topDocs = searcher.search(query, 8000);
         List<Document> documents = new ArrayList<>();
+
+        Map<Integer, Float> dssmScores = dssmClient.getDSSMScores(searchQuery);
+
+        List<PairFloatDoc> pairFloatDocs = new ArrayList<>();
+
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-            documents.add(searcher.doc(scoreDoc.doc));
+            Document document = searcher.doc(scoreDoc.doc);
+            float luceneScore = scoreDoc.score;
+            float dssmScore = 0;
+            int ranobe_id = checkDescription(document);
+            if(ranobe_id != -1) {
+                dssmScore = dssmScores.get(ranobe_id);
+            }
+
+            float score = combineScores(luceneScore, dssmScore);
+            if(ranobe_id != -1 && dssmScore > 0.1) {
+                System.out.println("score = " + score + "  dssmScore = " + dssmScore);
+            }
+            pairFloatDocs.add(new PairFloatDoc(score, document));
+        }
+
+        pairFloatDocs.sort(new PairFloatDocumentComparator());
+
+        for(int i = 0; i < 10; i++) {
+            documents.add(pairFloatDocs.get(i).getSecond());
+            System.out.println(pairFloatDocs.get(i).getFirst());
         }
 
         return documents;
-    }
-
-    public List<Document> searchIndex(String inField, String queryString) throws ParseException, IOException {
-        Query query = new QueryParser(inField, analyzer).parse(queryString);
-
-        return search(query);
     }
 
     public List<Document> search(SearchQuery sq) throws ParseException, IOException {
@@ -81,7 +159,7 @@ public class Searcher {
         Query query = booleanQueryBuilder.build();
         //System.out.println("Query: " + query);
 
-        return search(query);
+        return search(query, sq);
     }
 
     void addFuzzyQuery(BooleanQuery.Builder booleanQueryBuilder, Query query) {
